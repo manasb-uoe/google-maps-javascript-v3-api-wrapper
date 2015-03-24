@@ -104,7 +104,7 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
 
     this.clearMarkers = function () {
         for (var i=0; i<config.markers.length; i++) {
-            config.markers[i].setMap(null);
+            config.markers[i].remove();
         }
     };
 
