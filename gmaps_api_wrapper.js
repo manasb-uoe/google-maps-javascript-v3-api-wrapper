@@ -14,7 +14,8 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
             blue: "http://maps.google.com/intl/en_us/mapfiles/ms/micons/blue-dot.png",
             green: "http://maps.google.com/intl/en_us/mapfiles/ms/micons/green-dot.png",
             red: "http://maps.google.com/intl/en_us/mapfiles/ms/micons/red-dot.png",
-            orange: "http://maps.google.com/intl/en_us/mapfiles/ms/micons/orange-dot.png"
+            orange: "http://maps.google.com/intl/en_us/mapfiles/ms/micons/orange-dot.png",
+            bus: "https://maps.gstatic.com/mapfiles/ms2/micons/bus.png"
         },
         travelModes: {
             walking: google.maps.TravelMode.WALKING,
