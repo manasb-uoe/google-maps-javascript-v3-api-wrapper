@@ -42,7 +42,7 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
         config.directionsService = new google.maps.DirectionsService();
     }();
 
-    this.addMarker = function (location, infoWindowContent, shouldOpenInfoWindowInitially, markerIcon, doubleClickCallback) {
+    this.addMarker = function (location, infoWindowContent, shouldOpenInfoWindowInitially, markerIcon, markerId, doubleClickCallback) {
         var infoWindow = new google.maps.InfoWindow({
             content: infoWindowContent
         });
@@ -54,8 +54,13 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
         });
         marker.setMap(config.map);
 
-        // keep marker reference for later use
-        config.markers.push(marker);
+        // add id property to each marker so that it can easily be recognized later
+        marker.id = markerId;
+
+        // add remove method to marker
+        marker.remove = function () {
+            marker.setMap(null);
+        };
 
         //show info window when marker is clicked
         google.maps.event.addListener(marker, 'click', function() {
@@ -71,6 +76,10 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
         if (doubleClickCallback != undefined) {
             google.maps.event.addListener(marker, 'dblclick', doubleClickCallback);
         }
+
+        // keep marker reference for later use
+        config.markers.push(marker);
+
     };
 
     this.addRoute = function (origin, destination, travelMode) {
@@ -98,4 +107,8 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
             config.markers[i].setMap(null);
         }
     };
+
+    this.getMarkers = function () {
+        return config.markers;
+    }
 }
