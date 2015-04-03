@@ -8,6 +8,7 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
         directionsRenderer: null,
         directionsService: null,
         markers: [],
+        polylines: [],
         markerIcons: {
             purple: "http://maps.google.com/intl/en_us/mapfiles/ms/micons/purple-dot.png",
             yellow: "http://maps.google.com/intl/en_us/mapfiles/ms/micons/yellow-dot.png",
@@ -99,6 +100,28 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
         });
     };
 
+    this.addPolyline = function (pathCoordinates, options) {
+        for (var i=0; i<pathCoordinates.length; i++) {
+            pathCoordinates[i] = new google.maps.LatLng(pathCoordinates[i]["lat"], pathCoordinates[i]["lng"]);
+        }
+        var path = new google.maps.Polyline({
+            path: pathCoordinates,
+            geodesic: options.geodesic || true,
+            strokeColor: options.strokeColor || '#FF0000',
+            strokeOpacity: options.strokeOpacity || 1.0,
+            strokeWeight: options.strokeWeight || 2
+        });
+        path.setMap(config.map);
+
+        // add remove method to marker
+        path.remove = function () {
+            path.setMap(null);
+        };
+
+        // keep polyline reference for later use
+        config.polylines.push(path);
+    };
+
     this.clearRoutes = function () {
         config.directionsRenderer.setDirections({routes: []});
     };
@@ -109,7 +132,21 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
         }
     };
 
+    this.clearPolylines = function () {
+        for (var i=0; i<config.polylines.length; i++) {
+            config.polylines[i].remove();
+        }
+    };
+
     this.getMarkers = function () {
         return config.markers;
+    };
+
+    this.triggerResize = function () {
+        google.maps.event.trigger(config.map, 'resize');
+    };
+
+    this.setZoom = function (zoomLevel) {
+        config.map.setZoom(zoomLevel);
     }
 }
