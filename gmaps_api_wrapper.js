@@ -26,7 +26,7 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
     };
 
     // self invoking initialization method
-    var init = function () {
+    (function init() {
         // setup map
         var options = {
             zoom: zoomLevel,
@@ -42,46 +42,69 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
 
         // setup directions service which will retrieve the required route
         config.directionsService = new google.maps.DirectionsService();
-    }();
+    })();
 
-    this.addMarker = function (location, infoWindowContent, shouldOpenInfoWindowInitially, markerIcon, markerId, doubleClickCallback) {
-        var infoWindow = new google.maps.InfoWindow({
-            content: infoWindowContent
-        });
+    this.addMarker = function (id, position, options) {
+        var markerOptions = {
+            icon: options.icon || config.markerIcons.red,
+            singleClickCallback: options.singleClickCallback,
+            doubleClickCallback: options.doubleClickCallback,
+            infoWindowContent: options.infoWindowContent,
+            shouldOpenInfoWindowInitially: options.shouldOpenInfoWindowInitially || false
+        };
 
         var marker = new google.maps.Marker({
-            position: new google.maps.LatLng(location["lat"], location["lng"]),
+            position: new google.maps.LatLng(position["lat"], position["lng"]),
             map: config.map,
-            icon: new google.maps.MarkerImage(config.markerIcons[markerIcon] || config.markerIcons.red)
+            icon: new google.maps.MarkerImage(config.markerIcons[markerOptions.icon])
         });
+
+        var infoWindow;
+        if (markerOptions.infoWindowContent) {
+            infoWindow = new google.maps.InfoWindow({
+                content: markerOptions.infoWindowContent
+            });
+        }
+
         marker.setMap(config.map);
 
         // add id property to each marker so that it can easily be recognized later
-        marker.id = markerId;
+        marker.id = id;
 
-        // add remove method to marker
-        marker.remove = function () {
-            marker.setMap(null);
+        // add method to open info window
+        marker.infoWindow = function (state) {
+            if (infoWindow) {
+                if (state == "show") {
+                    infoWindow.open(config.map, marker);
+                } else if (state == "hide") {
+                    infoWindow.close(config.map, marker);
+                }
+            } else {
+                throw new Error("Info window content was not provided when marker was created");
+            }
         };
 
-        //show info window when marker is clicked
-        google.maps.event.addListener(marker, 'click', function() {
-            infoWindow.open(config.map, marker);
-        });
-
-        if (shouldOpenInfoWindowInitially) {
-            // initially show info window
-            infoWindow.open(config.map, marker);
+        if (markerOptions.shouldOpenInfoWindowInitially) {
+            if (infoWindow) {
+                infoWindow.open(config.map, marker);
+            }
         }
 
+        // handle single click using the callback provided
+        google.maps.event.addListener(marker, 'click', function () {
+            marker.infoWindow("show");
+            if (markerOptions.singleClickCallback) {
+                markerOptions.singleClickCallback();
+            }
+        });
+
         // handle double click using the callback provided
-        if (doubleClickCallback != undefined) {
-            google.maps.event.addListener(marker, 'dblclick', doubleClickCallback);
+        if (markerOptions.doubleClickCallback) {
+            google.maps.event.addListener(marker, 'dblclick', markerOptions.doubleClickCallback);
         }
 
         // keep marker reference for later use
         config.markers.push(marker);
-
     };
 
     this.addRoute = function (origin, destination, travelMode) {
@@ -113,11 +136,6 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
         });
         path.setMap(config.map);
 
-        // add remove method to marker
-        path.remove = function () {
-            path.setMap(null);
-        };
-
         // keep polyline reference for later use
         config.polylines.push(path);
     };
@@ -128,18 +146,30 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
 
     this.clearMarkers = function () {
         for (var i=0; i<config.markers.length; i++) {
-            config.markers[i].remove();
+            config.markers[i].setMap(null);
         }
+        config.markers = [];
     };
 
     this.clearPolylines = function () {
         for (var i=0; i<config.polylines.length; i++) {
-            config.polylines[i].remove();
+            config.polylines[i].setMap(null);
         }
+        config.polylines = [];
     };
 
-    this.getMarkers = function () {
-        return config.markers;
+    this.getMarkers = function (markerId) {
+        if (markerId) {
+            var filteredMarkers = [];
+            for (var i=0; i<config.markers.length; i++) {
+                if (config.markers[i].id == markerId) {
+                    filteredMarkers.push(config.markers[i]);
+                }
+            }
+            return filteredMarkers;
+        } else {
+            return config.markers;
+        }
     };
 
     this.triggerResize = function () {
@@ -148,5 +178,9 @@ function GoogleMapsApiWrapper(centerLocation, zoomLevel, mapContainer) {
 
     this.setZoom = function (zoomLevel) {
         config.map.setZoom(zoomLevel);
+    };
+
+    this.setCenter = function (centerLocation) {
+        config.map.setCenter(new google.maps.LatLng(centerLocation["lat"], centerLocation["lng"]));
     }
 }
